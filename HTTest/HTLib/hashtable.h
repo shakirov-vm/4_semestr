@@ -42,6 +42,7 @@ size_t calc_hash(hash_table* table, KEY* key_);
 int insert(hash_table* table, KEY key_, VALUE value_);
 	// return 0 - insert true
 	// return 1 - insert false, because this element is already in table
+	// return 2 - insert false, because can't allocate memory
 
 table_element* find(hash_table* table, KEY key_);
 
@@ -50,7 +51,10 @@ int erase(hash_table* table, KEY key_);
 	// return 1 - erase false, because this element is already deleted
 	// return 2 - erase false, because this element is not in the table
 
-void rehash(hash_table* table);
-void resize(hash_table* table);
+int rehash(hash_table* table);
+int resize(hash_table* table);
+	// return 0 - true
+	// return 1 - false, because can't allocate memory
+
 void dump(hash_table* table);
 

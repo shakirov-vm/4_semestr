@@ -1,5 +1,10 @@
+
 CC = gcc
 OUTPUT = a.out
+
+.PHONY: all
+
+all: clear compile run report
 
 compile_no_report: main.o hashtable.o
 	${CC} main.o hashtable.o -o ${OUTPUT} 
@@ -26,3 +31,6 @@ clear_report:
 	rm -f *.gcda
 	rm -f *.gcno
 	rm -f ht.info
+	
+%.o: %.c %.h
+	$(CC) -c $< -o $@

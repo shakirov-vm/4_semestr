@@ -4,6 +4,30 @@
 
 #include "./hashtable.h"
 
+static size_t alloc_mem = 0;
+static size_t alloc_mem_cal = 0;
+
+void* mymalloc(size_t mem_size) {
+	if (alloc_mem == 100) {
+		alloc_mem = 0;
+		return NULL;
+	}
+	else {
+		alloc_mem++;
+		return malloc(mem_size);
+	}
+}
+void* mycalloc(size_t number, size_t size) {
+	if (alloc_mem_cal == 100) {
+		alloc_mem_cal = 0;
+		return NULL;
+	}
+	else {
+		alloc_mem_cal++;
+		return calloc(number, size);
+	}	
+}
+
 size_t hash_pol(char* data_) {
 
 	size_t hash = 0;
@@ -20,7 +44,9 @@ size_t hash_pol(char* data_) {
 
 table_element* create_table_element(KEY key_, VALUE value_) {
 
-	table_element* ret = (table_element*) malloc (sizeof(table_element));
+	table_element* ret = (table_element*) mymalloc (sizeof(table_element));
+	if (ret == NULL) 
+		return NULL;
 
 	ret->key = key_;
 	ret->value = value_;
@@ -31,12 +57,17 @@ table_element* create_table_element(KEY key_, VALUE value_) {
 
 hash_table* create_hash_table(hash_func hash) {
 
-	hash_table* ret = (hash_table*) calloc (1, sizeof(hash_table));
+	hash_table* ret = (hash_table*) mycalloc (1, sizeof(hash_table));
+	if (ret == NULL);
 
 	ret->count_hash = hash;
 	ret->capacity = MINIMAL_TABLE;
 	ret->size = 0;
-	ret->vector = (table_element**) calloc (ret->capacity, sizeof(table_element*));
+	ret->vector = (table_element**) mycalloc (ret->capacity, sizeof(table_element*));
+	if (ret->vector == NULL) {
+		free(ret);
+		return NULL;
+	}
 
 	return ret;
 }
@@ -64,15 +95,19 @@ int insert(hash_table* table, KEY key_, VALUE value_) {
 
 	// return 0 - insert true
 	// return 1 - insert false, because this element is already in table
+	// return 2 - insert false, because can't allocate memory
 
-	if (table->size * 2 >= table->capacity) resize(table);
-    else if (table->size_with_del > 2 * table->size) rehash(table); // When we do it?
+	int ret = -1;
+
+	if (table->size * 2 >= table->capacity) ret = resize(table);
+    else if (table->size_with_del > 2 * table->size) ret = rehash(table); // When we do it?
     // ^^
     // || this is load_factors
+    if (ret == 1) return 2;
 
     size_t iter = calc_hash(table, &key_);
 
-    printf("key is %d, iter is %lld, size - %d, capacity - %d\n", key_, iter, table->size, table->capacity);
+    //printf("key is %d, iter is %lld, size - %d, capacity - %d\n", key_, iter, table->size, table->capacity);
 
     size_t i = 0;
     size_t first_deleted = -1;
@@ -88,6 +123,7 @@ int insert(hash_table* table, KEY key_, VALUE value_) {
     if (first_deleted == -1) {
 
         table->vector[iter] = create_table_element(key_, value_);
+        if (table->vector[iter] == NULL) return 2;
         ++(table->size_with_del);
     }
     else {
@@ -131,7 +167,7 @@ int erase(hash_table* table, KEY key_) {
 	while (table->vector[iter] != NULL && i < table->capacity) {
 
 		if (table->vector[iter]->key == key_) {
-			printf("find in erase\n");
+			//printf("find in erase\n");
 			if (table->vector[iter]->deleted == 1) return 1;
 			else {
 				table->vector[iter]->deleted = 1;
@@ -144,14 +180,21 @@ int erase(hash_table* table, KEY key_) {
 	return 2;
 }
 
-void rehash(hash_table* table) {
+int rehash(hash_table* table) {
 
-	printf("rehash, new capacity is %d\n", table->capacity);
+	// return 0 - true
+	// return 1 - false, because can't allocate memory
+
+	//printf("rehash, new capacity is %d\n", table->capacity);
 	table->size = 0;
 	table->size_with_del = 0;
 	
 	table_element** old_vector = table->vector;
-	table->vector = (table_element**) calloc (table->capacity, sizeof(table_element*));
+	table->vector = (table_element**) mycalloc (table->capacity, sizeof(table_element*));
+	if (table->vector == NULL) {
+		table->vector = old_vector;
+		return 1;
+	}
 
 	for (size_t i = 0; i < table->capacity / 2; i++) { // capacity is divided by 2
 
@@ -164,12 +207,23 @@ void rehash(hash_table* table) {
 		}
 	}
 	free(old_vector);
+
+	return 0;
 }
 
-void resize(hash_table* table) {
+int resize(hash_table* table) {
+
+	// return 0 - true
+	// return 1 - false, because can't allocate memory
 
 	table->capacity *= 2;
-	rehash(table);
+	int ret = rehash(table);
+	
+	if (ret != 0) {
+		table->capacity /= 2;
+		return 1;
+	}
+	return 0;
 }
 
 void foreach(hash_table* table, void(*callback)(table_element*, void*), void* data) {
