@@ -12,12 +12,16 @@
 #undef DEBUG
 #endif
 
+int ht_realloc(hash_table* table, size_t new_capacity);
+void ht_calc_load_factors(hash_table* table);
+size_t ht_calc_hash(hash_table* table, KEY* key_);
+
 #ifdef DEBUG
 static size_t alloc_mem = 0;
 static size_t alloc_mem_cal = 0;
 
-void* mymalloc(size_t mem_size) {
-	if (alloc_mem == 100) {
+void* ht_malloc(size_t mem_size) {
+	if (alloc_mem == 25) {
 		alloc_mem = 0;
 		return NULL;
 	}
@@ -26,8 +30,8 @@ void* mymalloc(size_t mem_size) {
 		return malloc(mem_size);
 	}
 }
-void* mycalloc(size_t number, size_t size) {
-	if (alloc_mem_cal == 100) {
+void* ht_calloc(size_t number, size_t size) {
+	if (alloc_mem_cal == 25) {
 		alloc_mem_cal = 0;
 		return NULL;
 	}
@@ -39,8 +43,8 @@ void* mycalloc(size_t number, size_t size) {
 #endif
 
 #ifdef RELEASE
-void* mymalloc(size_t mem_size) { return malloc(mem_size); }
-void* mycalloc(size_t number, size_t size) { return calloc(number, size); }
+void* ht_malloc(size_t mem_size) { return malloc(mem_size); }
+void* ht_calloc(size_t number, size_t size) { return calloc(number, size); }
 #endif
 
 size_t hash_pol(char* data_) {
@@ -57,9 +61,9 @@ size_t hash_pol(char* data_) {
 	return hash;
 }
 
-table_element* create_table_element(KEY key_, VALUE value_) {
+table_element* ht_create_element(KEY key_, VALUE value_) {
 
-	table_element* ret = (table_element*) mymalloc (sizeof(table_element));
+	table_element* ret = (table_element*) ht_malloc (sizeof(table_element));
 	if (ret == NULL) 
 		return NULL;
 
@@ -70,26 +74,26 @@ table_element* create_table_element(KEY key_, VALUE value_) {
 	return ret;
 }
 
-hash_table* create_hash_table(hash_func hash) {
+hash_table* ht_create_container(hash_func hash) {
 
-	hash_table* ret = (hash_table*) mycalloc (1, sizeof(hash_table));
-	if (ret == NULL);
+	hash_table* ret = (hash_table*) ht_calloc (1, sizeof(hash_table));
+	if (ret == NULL) return NULL;
 
 	ret->count_hash = hash;
 	ret->capacity = MINIMAL_TABLE;
 	ret->size = 0;
-	ret->vector = (table_element**) mycalloc (ret->capacity, sizeof(table_element*));
+	ret->vector = (table_element**) ht_calloc (ret->capacity, sizeof(table_element*));
 	if (ret->vector == NULL) {
 		free(ret);
 		return NULL;
 	}
-	
-	calc_load_factors(ret);
+
+	ht_calc_load_factors(ret);
 
 	return ret;
 }
 
-void delete_hash_table(hash_table* table) {
+void ht_delete_container(hash_table* table) {
 
 	for(size_t i = 0; i < table->capacity; i++) free(table->vector[i]);
 
@@ -97,24 +101,24 @@ void delete_hash_table(hash_table* table) {
 	free(table);
 }
 
-int hash_table_is_empty(hash_table* table) {
-
+int ht_is_empty(hash_table* table) {
+	
 	if (table->size == 0) return 1; // 1 - is empty - true
 	return 0; // 0 - not empty - false
 }
 
-void calc_load_factors(hash_table* table) {
+void ht_calc_load_factors(hash_table* table) {
 
 	table->load_factor = table->size / table->capacity;
 	table->load_factor_with_del = table->size_with_del / table->capacity;
 }
 
-size_t calc_hash(hash_table* table, KEY* key_) {
+size_t ht_calc_hash(hash_table* table, KEY* key_) {
 
 	return table->count_hash((char*) key_) % (table->capacity);
 }
 
-int insert(hash_table* table, KEY key_, VALUE value_) {
+int ht_insert(hash_table* table, KEY key_, VALUE value_) {
 
 	// return 0 - insert true
 	// return 1 - insert false, because this element is already in table
@@ -122,17 +126,14 @@ int insert(hash_table* table, KEY key_, VALUE value_) {
 
 	int ret = -1;
 
-	calc_load_factors(table);
+	ht_calc_load_factors(table);
 
-	if (table->load_factor > MAX_LOAD_FACTOR) ret = resize(table);
-    else if (table->load_factor_with_del > MAX_LOAD_FACTOR_WITH_DEL) ret = rehash(table);
+	if (table->load_factor > MAX_LOAD_FACTOR) ret = ht_resize(table);
+    else if (table->load_factor_with_del > MAX_LOAD_FACTOR_WITH_DEL) ret = ht_rehash(table);
 
     if (ret == 1) return 2;
 
-    size_t iter = calc_hash(table, &key_);
-
-    //printf("key is %d, iter is %lld, size - %d, capacity - %d\n", key_, iter, table->size, table->capacity);
-
+    size_t iter = ht_calc_hash(table, &key_);
     size_t i = 0;
     size_t first_deleted = -1;
     										
@@ -146,28 +147,31 @@ int insert(hash_table* table, KEY key_, VALUE value_) {
 
     if (first_deleted == -1) {
 
-        table->vector[iter] = create_table_element(key_, value_);
+        table->vector[iter] = ht_create_element(key_, value_);
         if (table->vector[iter] == NULL) return 2;
-        ++(table->size_with_del);
+
     }
     else {
 
+    	--table->size_with_del;
+        
         table->vector[first_deleted]->key = key_;
         table->vector[first_deleted]->value = value_;
         table->vector[first_deleted]->deleted = 0;
     }
     
+    ++table->size_with_del;
     ++table->size;
     return 0;
 }
 
-table_element* find(hash_table* table, KEY key_) { 
+table_element* ht_find(hash_table* table, KEY key_) { 
 
-	size_t iter = calc_hash(table, &key_);
+	size_t iter = ht_calc_hash(table, &key_);
 	size_t i = 0;
 
 	while (table->vector[iter] != NULL && i < table->capacity) {
-		//printf("key is %d, iter is %d, deleted is %d\n", key_, table->vector[iter]->key, table->vector[iter]->deleted);
+		
 		if (table->vector[iter]->key == key_) {
 
 			if (table->vector[iter]->deleted == 1) return NULL;
@@ -179,22 +183,23 @@ table_element* find(hash_table* table, KEY key_) {
 	return NULL;
 }
 
-int erase(hash_table* table, KEY key_) { 
+int ht_erase(hash_table* table, KEY key_) { 
 
 	// return 0 - erase true
 	// return 1 - erase false, because this element is already deleted
 	// return 2 - erase false, because this element is not in the table
 
-	size_t iter = calc_hash(table, &key_);
+	size_t iter = ht_calc_hash(table, &key_);
 	size_t i = 0;
 
 	while (table->vector[iter] != NULL && i < table->capacity) {
 
 		if (table->vector[iter]->key == key_) {
-			//printf("find in erase\n");
+			
 			if (table->vector[iter]->deleted == 1) return 1;
 			else {
 				table->vector[iter]->deleted = 1;
+				--table->size;
 				return 0;
 			}
 		}
@@ -204,53 +209,66 @@ int erase(hash_table* table, KEY key_) {
 	return 2;
 }
 
-int rehash(hash_table* table) {
+int ht_realloc(hash_table* table, size_t new_capacity) {
 
 	// return 0 - true
 	// return 1 - false, because can't allocate memory
-
-	//printf("rehash, new capacity is %d\n", table->capacity);
+	
 	table->size = 0;
 	table->size_with_del = 0;
 	
 	table_element** old_vector = table->vector;
-	table->vector = (table_element**) mycalloc (table->capacity, sizeof(table_element*));
+	ht_is_empty(table);
+	table->vector = (table_element**) ht_calloc (new_capacity, sizeof(table_element*));
 	if (table->vector == NULL) {
 		table->vector = old_vector;
 		return 1;
 	}
 
-	for (size_t i = 0; i < table->capacity / 2; i++) { // capacity is divided by 2
+	for (size_t i = 0; i < table->capacity; i++) {
 
-		//if (old_vector[i] != NULL) printf("in rehash deleted is %d[%d]\n", old_vector[i]->deleted, i);
 		if (old_vector[i] != NULL && old_vector[i]->deleted != 1) {
 
-			insert(table, old_vector[i]->key, old_vector[i]->value); // This is recursion!!
-			//printf("in rehash size - %d\n", table->size);
-			// Or not?
+			ht_insert(table, old_vector[i]->key, old_vector[i]->value); // This is recursion!!
+			// There always true
 		}
 	}
 	free(old_vector);
 
+	table->capacity = new_capacity;
+	
 	return 0;
 }
 
-int resize(hash_table* table) {
+int ht_rehash(hash_table* table) {
 
 	// return 0 - true
 	// return 1 - false, because can't allocate memory
 
-	table->capacity *= 2;
-	int ret = rehash(table);
+	int ret = ht_realloc(table, table->capacity);
 	
-	if (ret != 0) {
-		table->capacity /= 2;
-		return 1;
-	}
+	if (ret != 0) return 1;
+
 	return 0;
 }
 
-void foreach(hash_table* table, void(*callback)(table_element*, void*), void* data) {
+int ht_resize(hash_table* table) {
+
+	// return 0 - true
+	// return 1 - false, because can't allocate memory
+
+	int ret = ht_realloc(table, table->capacity * 2);
+	
+	if (ret != 0) {
+
+		table->capacity /= 2;
+		return 1;
+	}
+
+	return 0;
+}
+
+void ht_foreach(hash_table* table, void(*callback)(table_element*, void*), void* data) {
 
 	for(size_t i = 0; i < table->capacity; i++) {
 	

@@ -32,7 +32,7 @@ typedef struct table_elem {
 	int deleted; // 0 is not deleted, 1 is deleted
 } table_element;
 
-table_element* create_table_element(KEY key_, VALUE value_);
+table_element* ht_create_element(KEY key_, VALUE value_);
 
 typedef struct hash_tbl {
 
@@ -45,29 +45,24 @@ typedef struct hash_tbl {
 	double load_factor_with_del;
 } hash_table;
 
-void foreach(hash_table* table, void(*callback)(table_element*, void*), void* data);
-hash_table* create_hash_table(hash_func hash);
-void delete_hash_table(hash_table* table);
-int hash_table_is_empty(hash_table* table);
-void calc_load_factors(hash_table* table);
-size_t calc_hash(hash_table* table, KEY* key_);
-
-int insert(hash_table* table, KEY key_, VALUE value_);
+hash_table* ht_create_container(hash_func hash);
+void ht_delete_container(hash_table* table);
+int ht_is_empty(hash_table* table);
+int ht_insert(hash_table* table, KEY key_, VALUE value_);
 	// return 0 - insert true
 	// return 1 - insert false, because this element is already in table
 	// return 2 - insert false, because can't allocate memory
 
-table_element* find(hash_table* table, KEY key_);
+table_element* ht_find(hash_table* table, KEY key_);
 
-int erase(hash_table* table, KEY key_);
+int ht_erase(hash_table* table, KEY key_);
 	// return 0 - erase true
 	// return 1 - erase false, because this element is already deleted
 	// return 2 - erase false, because this element is not in the table
 
-int rehash(hash_table* table);
-int resize(hash_table* table);
+int ht_rehash(hash_table* table);
+int ht_resize(hash_table* table);
 	// return 0 - true
 	// return 1 - false, because can't allocate memory
 
-void dump(hash_table* table);
-
+void ht_foreach(hash_table* table, void(*callback)(table_element*, void*), void* data);
