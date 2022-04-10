@@ -1,7 +1,17 @@
 
 #include "stddef.h"
 
+#ifndef MINIMAL_TABLE
 #define MINIMAL_TABLE 10
+#endif
+
+#ifndef MAX_LOAD_FACTOR
+#define MAX_LOAD_FACTOR 0.5
+#endif
+
+#ifndef MAX_LOAD_FACTOR_WITH_DEL
+#define MAX_LOAD_FACTOR_WITH_DEL 0.5
+#endif
 
 #ifndef KEY
 #define KEY int
@@ -31,12 +41,15 @@ typedef struct hash_tbl {
 	size_t size_with_del;
 	size_t capacity;
 	hash_func count_hash;
+	double load_factor;
+	double load_factor_with_del;
 } hash_table;
 
 void foreach(hash_table* table, void(*callback)(table_element*, void*), void* data);
 hash_table* create_hash_table(hash_func hash);
 void delete_hash_table(hash_table* table);
 int hash_table_is_empty(hash_table* table);
+void calc_load_factors(hash_table* table);
 size_t calc_hash(hash_table* table, KEY* key_);
 
 int insert(hash_table* table, KEY key_, VALUE value_);

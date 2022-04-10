@@ -4,6 +4,15 @@
 
 #include "./hashtable.h"
 
+#ifndef DEBUG
+#define DEBUG // default
+#endif
+
+#ifdef RELEASE
+#undef DEBUG
+#endif
+
+#ifdef DEBUG
 static size_t alloc_mem = 0;
 static size_t alloc_mem_cal = 0;
 
@@ -27,6 +36,12 @@ void* mycalloc(size_t number, size_t size) {
 		return calloc(number, size);
 	}	
 }
+#endif
+
+#ifdef RELEASE
+void* mymalloc(size_t mem_size) { return malloc(mem_size); }
+void* mycalloc(size_t number, size_t size) { return calloc(number, size); }
+#endif
 
 size_t hash_pol(char* data_) {
 
@@ -68,6 +83,8 @@ hash_table* create_hash_table(hash_func hash) {
 		free(ret);
 		return NULL;
 	}
+	
+	calc_load_factors(ret);
 
 	return ret;
 }
@@ -86,6 +103,12 @@ int hash_table_is_empty(hash_table* table) {
 	return 0; // 0 - not empty - false
 }
 
+void calc_load_factors(hash_table* table) {
+
+	table->load_factor = table->size / table->capacity;
+	table->load_factor_with_del = table->size_with_del / table->capacity;
+}
+
 size_t calc_hash(hash_table* table, KEY* key_) {
 
 	return table->count_hash((char*) key_) % (table->capacity);
@@ -99,10 +122,11 @@ int insert(hash_table* table, KEY key_, VALUE value_) {
 
 	int ret = -1;
 
-	if (table->size * 2 >= table->capacity) ret = resize(table);
-    else if (table->size_with_del > 2 * table->size) ret = rehash(table); // When we do it?
-    // ^^
-    // || this is load_factors
+	calc_load_factors(table);
+
+	if (table->load_factor > MAX_LOAD_FACTOR) ret = resize(table);
+    else if (table->load_factor_with_del > MAX_LOAD_FACTOR_WITH_DEL) ret = rehash(table);
+
     if (ret == 1) return 2;
 
     size_t iter = calc_hash(table, &key_);

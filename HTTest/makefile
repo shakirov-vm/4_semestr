@@ -1,20 +1,25 @@
 
-CC = gcc
-OUTPUT = a.out
-
-.PHONY: all
+CC ?= gcc
+OUTPUT ?= a.out
+CFLAGS := ${CFLAGS}
 
 all: clear compile run report
 
-compile_no_report: main.o hashtable.o
-	${CC} main.o hashtable.o -o ${OUTPUT} 
-compile: main.o hashtable.o
-	${CC} main.o hashtable.o --coverage
+.PHONY: run report
 
+compile_no_report: main.o hashtable.o
+	${CC} main.o hashtable.o -o ${OUTPUT} ${CFLAGS}
+main.o_no_report: main.c ./HTLib/hashtable.h 
+	${CC} -o main.o main.c -c ${CFLAGS}
+hashtable.o_no_report: ./HTLib/hashtable.h 
+	${CC} -o hashtable.o ./HTLib/hashtable.c -c ${CFLAGS}
+
+compile: main.o hashtable.o
+	${CC} main.o hashtable.o --coverage ${CFLAGS}
 main.o: main.c ./HTLib/hashtable.h 
-	gcc -o main.o main.c -c --coverage
+	${CC} -o main.o main.c -c --coverage ${CFLAGS}
 hashtable.o: ./HTLib/hashtable.h 
-	gcc -o hashtable.o ./HTLib/hashtable.c -c --coverage
+	${CC} -o hashtable.o ./HTLib/hashtable.c -c --coverage ${CFLAGS}
 
 run:
 	./a.out
