@@ -1,16 +1,23 @@
-
 #include "stddef.h"
+
+#ifndef DEBUG
+#define DEBUG // default
+#endif
+
+#ifdef RELEASE
+#undef DEBUG
+#endif
 
 #ifndef MINIMAL_TABLE
 #define MINIMAL_TABLE 10
 #endif
 
 #ifndef MAX_LOAD_FACTOR
-#define MAX_LOAD_FACTOR 0.5
+#define MAX_LOAD_FACTOR 0.6
 #endif
 
 #ifndef MAX_LOAD_FACTOR_WITH_DEL
-#define MAX_LOAD_FACTOR_WITH_DEL 0.5
+#define MAX_LOAD_FACTOR_WITH_DEL 0.6
 #endif
 
 #ifndef KEY

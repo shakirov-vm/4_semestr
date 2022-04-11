@@ -4,22 +4,16 @@
 
 #include "./hashtable.h"
 
-#ifndef DEBUG
-#define DEBUG // default
-#endif
-
-#ifdef RELEASE
-#undef DEBUG
-#endif
-
 int ht_realloc(hash_table* table, size_t new_capacity);
 void ht_calc_load_factors(hash_table* table);
 size_t ht_calc_hash(hash_table* table, KEY* key_);
 
 #ifdef DEBUG
-static size_t alloc_mem = 0;
-static size_t alloc_mem_cal = 0;
+size_t alloc_mem = 0;
+size_t alloc_mem_cal = 0;
+#endif
 
+#ifdef DEBUG
 void* ht_malloc(size_t mem_size) {
 	if (alloc_mem == 25) {
 		alloc_mem = 0;
@@ -82,8 +76,10 @@ hash_table* ht_create_container(hash_func hash) {
 	ret->count_hash = hash;
 	ret->capacity = MINIMAL_TABLE;
 	ret->size = 0;
+	ret->size_with_del = 0;
 	ret->vector = (table_element**) ht_calloc (ret->capacity, sizeof(table_element*));
 	if (ret->vector == NULL) {
+
 		free(ret);
 		return NULL;
 	}
@@ -94,6 +90,8 @@ hash_table* ht_create_container(hash_func hash) {
 }
 
 void ht_delete_container(hash_table* table) {
+
+	if (table == NULL) return;
 
 	for(size_t i = 0; i < table->capacity; i++) free(table->vector[i]);
 
@@ -109,8 +107,8 @@ int ht_is_empty(hash_table* table) {
 
 void ht_calc_load_factors(hash_table* table) {
 
-	table->load_factor = table->size / table->capacity;
-	table->load_factor_with_del = table->size_with_del / table->capacity;
+	table->load_factor = (double) table->size / table->capacity;
+	table->load_factor_with_del = (double) table->size_with_del / table->capacity;
 }
 
 size_t ht_calc_hash(hash_table* table, KEY* key_) {
@@ -171,7 +169,7 @@ table_element* ht_find(hash_table* table, KEY key_) {
 	size_t i = 0;
 
 	while (table->vector[iter] != NULL && i < table->capacity) {
-		
+
 		if (table->vector[iter]->key == key_) {
 
 			if (table->vector[iter]->deleted == 1) return NULL;
@@ -259,19 +257,18 @@ int ht_resize(hash_table* table) {
 
 	int ret = ht_realloc(table, table->capacity * 2);
 	
-	if (ret != 0) {
-
-		table->capacity /= 2;
-		return 1;
-	}
+	if (ret != 0) return 1;
 
 	return 0;
 }
 
 void ht_foreach(hash_table* table, void(*callback)(table_element*, void*), void* data) {
 
+	//printf("table %p\n", table);
 	for(size_t i = 0; i < table->capacity; i++) {
-	
+		//if (table->vector[i] != NULL) printf("[%d;%d;%d - %d] ", table->vector[i]->key, table->vector[i]->value, table->vector[i]->deleted, i);
+		//else printf("[NULL - %d] ", i);
+		
 		if (table->vector[i] != NULL && table->vector[i]->deleted == 0) callback(table->vector[i], data);
 	}
 }
