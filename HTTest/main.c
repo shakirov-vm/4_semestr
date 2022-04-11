@@ -21,18 +21,8 @@ int main() {
 	int ret;
 	
 	hash_table* first = ht_create_container(hash_pol);
-	ret = ht_insert(first, 1, 2);
-	ret = ht_insert(first, 2, 4);
 
-	dump_wrap(first);
-
-	for(int i = 0; i < 100; i++) {
-		printf("[%d;%d]\n", hash_pol((char*) &i) % 10, i);
-		//if (ret != 0) printf("insert error - %d\n", i); 
-	}
-	
-
-	/*for (int i = 0; i < 1001; i++) { // if alloc_mem every 25 <- there last is NULL
+	for (int i = 0; i < 1001; i++) { // if alloc_mem every 25 <- there last is NULL
 		hash_table* tmp = ht_create_container(hash_pol);
 		if  (tmp != NULL) ht_delete_container(tmp);
 	}
@@ -100,5 +90,5 @@ int main() {
 	}
 	ht_delete_container(second);
 
-	return 0;*/
+	return 0;
 }

@@ -132,13 +132,8 @@ int test_insert_erase() {
 	ret = ht_insert(tmp, 2, 4);
 	if (ret != 0) return TEST_FAILED_INSERT;
 
-	if (tmp->vector[4]->key != 2) return TEST_FAILED_INSERT;
-	if (tmp->vector[4]->value != 4) return TEST_FAILED_INSERT;
-	if (tmp->vector[4]->deleted != 0) return TEST_FAILED_INSERT;
-
-	if (tmp->vector[7]->key != 1) return TEST_FAILED_INSERT;
-	if (tmp->vector[7]->value != 2) return TEST_FAILED_INSERT;
-	if (tmp->vector[7]->deleted != 0) return TEST_FAILED_INSERT;
+	if (check_elem(tmp, 4, 2, 4, 0) == TEST_FAILED) return TEST_FAILED_INSERT;
+	if (check_elem(tmp, 7, 1, 2, 0) == TEST_FAILED) return TEST_FAILED_INSERT;
 
 	for (int i = 0; i < 10; i++) {
 
@@ -150,16 +145,12 @@ int test_insert_erase() {
 	ret = ht_insert(tmp, 12, 144);
 	if (ret != 0) return TEST_FAILED_INSERT;
 
-	if (tmp->vector[5]->key != 12) return TEST_FAILED_INSERT;
-	if (tmp->vector[5]->value != 144) return TEST_FAILED_INSERT;
-	if (tmp->vector[5]->deleted != 0) return TEST_FAILED_INSERT;
+	if (check_elem(tmp, 5, 12, 144, 0) == TEST_FAILED) return TEST_FAILED_INSERT;
 
 	ret = ht_insert(tmp, 15, 225);
 	if (ret != 0) return TEST_FAILED_INSERT;
 
-	if (tmp->vector[6]->key != 15) return TEST_FAILED_INSERT;
-	if (tmp->vector[6]->value != 225) return TEST_FAILED_INSERT;
-	if (tmp->vector[6]->deleted != 0) return TEST_FAILED_INSERT;
+	if (check_elem(tmp, 6, 15, 225, 0) == TEST_FAILED) return TEST_FAILED_INSERT;
 
 	alloc_mem = 25;
 
@@ -178,16 +169,12 @@ int test_insert_erase() {
 	if (ret != 1) return TEST_FAILED_ERASE;
 
 	if (tmp->vector[5] == NULL) return TEST_FAILED_ERASE;
-	if (tmp->vector[5]->key != 12) return TEST_FAILED_ERASE;
-	if (tmp->vector[5]->value != 144) return TEST_FAILED_ERASE;
-	if (tmp->vector[5]->deleted != 1) return TEST_FAILED_ERASE;
+	if (check_elem(tmp, 5, 12, 144, 1) == TEST_FAILED) return TEST_FAILED_ERASE;
 
 	ret = ht_insert(tmp, 12, 144);
 	if (ret != 0) return TEST_FAILED_INSERT;
 
-	if (tmp->vector[5]->key != 12) return TEST_FAILED_INSERT;
-	if (tmp->vector[5]->value != 144) return TEST_FAILED_INSERT;
-	if (tmp->vector[5]->deleted != 0) return TEST_FAILED_INSERT;
+	if (check_elem(tmp, 5, 12, 144, 0) == TEST_FAILED) return TEST_FAILED_INSERT;
 
 	ret = ht_erase(tmp, 10);
 	if (ret != 2) return TEST_FAILED_ERASE;

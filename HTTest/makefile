@@ -7,22 +7,22 @@ all: clear compile run report
 
 .PHONY: run report
 
-compile_no_report: main.o hashtable.o
-	${CC} main.o hashtable.o -o ${OUTPUT} ${CFLAGS}
-main.o_no_report: main.c ./HTLib/hashtable.h 
-	${CC} -o main.o main.c -c ${CFLAGS}
+compile_no_report: test.o hashtable.o
+	${CC} test.o hashtable.o -o ${OUTPUT} ${CFLAGS}
+test.o_no_report: test.c ./HTLib/hashtable.h 
+	${CC} -o test.o test.c -c ${CFLAGS}
 hashtable.o_no_report: ./HTLib/hashtable.h 
 	${CC} -o hashtable.o ./HTLib/hashtable.c -c ${CFLAGS}
 
-compile: main.o hashtable.o
-	${CC} main.o hashtable.o --coverage ${CFLAGS}
-main.o: main.c ./HTLib/hashtable.h 
-	${CC} -o main.o main.c -c --coverage ${CFLAGS}
+compile: test.o hashtable.o
+	${CC} test.o hashtable.o --coverage ${CFLAGS}
+test.o: test.c ./HTLib/hashtable.h 
+	${CC} -o test.o test.c -c --coverage ${CFLAGS}
 hashtable.o: ./HTLib/hashtable.h 
 	${CC} -o hashtable.o ./HTLib/hashtable.c -c --coverage ${CFLAGS}
 
 run:
-	./a.out
+	./${OUTPUT}
 report:
 	lcov -t "ht_t" -o ht.info -c -d .
 	genhtml -o report ht.info
