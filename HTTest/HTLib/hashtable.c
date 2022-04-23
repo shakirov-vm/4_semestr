@@ -37,8 +37,12 @@ void* ht_calloc(size_t number, size_t size) {
 #endif
 
 #ifdef RELEASE
-void* ht_malloc(size_t mem_size) { return malloc(mem_size); }
-void* ht_calloc(size_t number, size_t size) { return calloc(number, size); }
+void* ht_malloc(size_t mem_size) { 
+	return malloc(mem_size); 
+}
+void* ht_calloc(size_t number, size_t size) { 
+	return calloc(number, size); 
+}
 #endif
 
 size_t hash_pol(char* data_) {
@@ -71,12 +75,13 @@ table_element* ht_create_element(KEY key_, VALUE value_) {
 hash_table* ht_create_container(hash_func hash) {
 
 	hash_table* ret = (hash_table*) ht_calloc (1, sizeof(hash_table));
-	if (ret == NULL) return NULL;
+	if (ret == NULL) 
+		return NULL;
 
 	ret->count_hash = hash;
 	ret->capacity = MINIMAL_TABLE;
 	ret->size = 0;
-	ret->size_with_del = 0;
+	ret->size_deleted = 0;
 	ret->vector = (table_element**) ht_calloc (ret->capacity, sizeof(table_element*));
 	if (ret->vector == NULL) {
 
@@ -91,7 +96,8 @@ hash_table* ht_create_container(hash_func hash) {
 
 void ht_delete_container(hash_table* table) {
 
-	if (table == NULL) return;
+	if (table == NULL) 
+		return;
 
 	for(size_t i = 0; i < table->capacity; i++) free(table->vector[i]);
 
@@ -101,14 +107,16 @@ void ht_delete_container(hash_table* table) {
 
 int ht_is_empty(hash_table* table) {
 	
-	if (table->size == 0) return 1; // 1 - is empty - true
+	if (table->size == 0) 
+		return 1; // 1 - is empty - true
+	
 	return 0; // 0 - not empty - false
 }
 
 void ht_calc_load_factors(hash_table* table) {
 
 	table->load_factor = (double) table->size / table->capacity;
-	table->load_factor_with_del = (double) table->size_with_del / table->capacity;
+	table->garbage_factor = (double) table->size_deleted / (table->size + 1);
 }
 
 size_t ht_calc_hash(hash_table* table, KEY* key_) {
@@ -126,10 +134,13 @@ int ht_insert(hash_table* table, KEY key_, VALUE value_) {
 
 	ht_calc_load_factors(table);
 
-	if (table->load_factor > MAX_LOAD_FACTOR) ret = ht_resize(table);
-    else if (table->load_factor_with_del > MAX_LOAD_FACTOR_WITH_DEL) ret = ht_rehash(table);
+	if (table->load_factor > MAX_LOAD_FACTOR)
+		ret = ht_resize(table);
+	else if (table->garbage_factor > MAX_GARBAGE_FACTOR) 
+		ret = ht_rehash(table);
 
-    if (ret == 1) return 2;
+    if (ret == 1) 
+    	return 2;
 
     size_t iter = ht_calc_hash(table, &key_);
     size_t i = 0;
@@ -137,8 +148,11 @@ int ht_insert(hash_table* table, KEY key_, VALUE value_) {
     										
     while (table->vector[iter] != NULL && i < table->capacity) {
 
-        if (table->vector[iter]->value == value_ && table->vector[iter]->deleted == 0) return 1;
-        if (table->vector[iter]->deleted && first_deleted == -1) first_deleted = iter;
+        if (table->vector[iter]->value == value_ && table->vector[iter]->deleted == 0) 
+        	return 1;
+        if (table->vector[iter]->deleted && first_deleted == -1) 
+        	first_deleted = iter;
+        
         iter = (iter + 1) % table->capacity;
         ++i;
     }
@@ -146,19 +160,19 @@ int ht_insert(hash_table* table, KEY key_, VALUE value_) {
     if (first_deleted == -1) {
 
         table->vector[iter] = ht_create_element(key_, value_);
-        if (table->vector[iter] == NULL) return 2;
+        if (table->vector[iter] == NULL) 
+        	return 2;
 
     }
     else {
 
-    	--table->size_with_del;
+    	--table->size_deleted;
         
         table->vector[first_deleted]->key = key_;
         table->vector[first_deleted]->value = value_;
         table->vector[first_deleted]->deleted = 0;
     }
-    
-    ++table->size_with_del;
+
     ++table->size;
     return 0;
 }
@@ -172,8 +186,10 @@ table_element* ht_find(hash_table* table, KEY key_) {
 
 		if (table->vector[iter]->key == key_) {
 
-			if (table->vector[iter]->deleted == 1) return NULL;
-			else return table->vector[iter];
+			if (table->vector[iter]->deleted == 1) 
+				return NULL;
+			else 
+				return table->vector[iter];
 		}
 		iter = (iter + 1) % table->capacity;
 		++i;
@@ -194,9 +210,13 @@ int ht_erase(hash_table* table, KEY key_) {
 
 		if (table->vector[iter]->key == key_) {
 			
-			if (table->vector[iter]->deleted == 1) return 1;
+			if (table->vector[iter]->deleted == 1) 
+				return 1;
+			
 			else {
+
 				table->vector[iter]->deleted = 1;
+				++table->size_deleted;
 				--table->size;
 				return 0;
 			}
@@ -213,7 +233,7 @@ int ht_realloc(hash_table* table, size_t new_capacity) {
 	// return 1 - false, because can't allocate memory
 	
 	table->size = 0;
-	table->size_with_del = 0;
+	table->size_deleted = 0;
 	
 	table_element** old_vector = table->vector;
 	ht_is_empty(table);
@@ -245,7 +265,8 @@ int ht_rehash(hash_table* table) {
 
 	int ret = ht_realloc(table, table->capacity);
 	
-	if (ret != 0) return 1;
+	if (ret != 0) 
+		return 1;
 
 	return 0;
 }
@@ -257,18 +278,19 @@ int ht_resize(hash_table* table) {
 
 	int ret = ht_realloc(table, table->capacity * 2);
 	
-	if (ret != 0) return 1;
+	if (ret != 0) 
+		return 1;
 
 	return 0;
 }
 
 void ht_foreach(hash_table* table, void(*callback)(table_element*, void*), void* data) {
 
-	//printf("table %p\n", table);
 	for(size_t i = 0; i < table->capacity; i++) {
-		//if (table->vector[i] != NULL) printf("[%d;%d;%d - %d] ", table->vector[i]->key, table->vector[i]->value, table->vector[i]->deleted, i);
-		//else printf("[NULL - %d] ", i);
+		//if (table->vector[i] != NULL) printf("[%d;%d;%d - %ld] ", table->vector[i]->key, table->vector[i]->value, table->vector[i]->deleted, i);
+		//else printf("[NULL - %ld] ", i);
 		
-		if (table->vector[i] != NULL && table->vector[i]->deleted == 0) callback(table->vector[i], data);
+		if (table->vector[i] != NULL && table->vector[i]->deleted == 0) 
+			callback(table->vector[i], data);
 	}
 }

@@ -16,8 +16,8 @@
 #define MAX_LOAD_FACTOR 0.6
 #endif
 
-#ifndef MAX_LOAD_FACTOR_WITH_DEL
-#define MAX_LOAD_FACTOR_WITH_DEL 0.6
+#ifndef MAX_GARBAGE_FACTOR
+#define MAX_GARBAGE_FACTOR 1
 #endif
 
 #ifndef KEY
@@ -45,11 +45,11 @@ typedef struct hash_tbl {
 
 	table_element** vector;
 	size_t size;
-	size_t size_with_del;
+	size_t size_deleted;
 	size_t capacity;
 	hash_func count_hash;
 	double load_factor;
-	double load_factor_with_del;
+	double garbage_factor;
 } hash_table;
 
 hash_table* ht_create_container(hash_func hash);

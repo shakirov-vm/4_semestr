@@ -103,7 +103,7 @@ int test_create_delete() {
 	if (tmp->capacity != MINIMAL_TABLE) return TEST_FAILED;
 	if (tmp->count_hash != hash_pol) return TEST_FAILED;
 	if (!double_is_equal(tmp->load_factor, 0)) return TEST_FAILED;
-	if (!double_is_equal(tmp->load_factor_with_del, 0)) return TEST_FAILED;
+	if (!double_is_equal(tmp->size_deleted, 0)) return TEST_FAILED;
 
 	alloc_mem_cal = 25;
 	hash_table* tmp_1 = ht_create_container(hash_pol);
@@ -122,7 +122,7 @@ int test_create_delete() {
 int test_insert_erase() {
 
 	// There not expected rehash and resize
-	// Expect that MINIMAL_TABLE == 10, LOAD_FACTORS - 0.6
+	// Expect that MINIMAL_TABLE == 10, LOAD_FACTOR - 0.6, MAX_GARBAGE_FACTOR - 1
  	int ret;
 
 	hash_table* tmp = ht_create_container(hash_pol);
@@ -263,23 +263,19 @@ int test_rehash_resize() {
 //////////////////////////////////////////
 	tmp = ht_create_container(hash_pol);
 
-	for (int i = 0; i < 5; i++) ht_insert(tmp, i, i * i);
-	for (int i = 0; i < 5; i++) ht_erase(tmp, i);
-
-	ht_insert(tmp, 5, 25);
-	ht_insert(tmp, 6, 36);
+	for (int i = 0; i < 7; i++) ht_insert(tmp, i, i * i);
 
 	alloc_mem_cal = 25;
 	ret = ht_insert(tmp, 7, 49);
 	if (ret != 2) return TEST_FAILED;
 
-	if (check_elem(tmp, 0, 0, 0, 1) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 1, 3, 9, 1) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 0, 0, 0, 0) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 1, 3, 9, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 2, 6, 36, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 4, 2, 4, 1) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 4, 2, 4, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 5, 5, 25, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 7, 1, 1, 1) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 8, 4, 16, 1) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 7, 1, 1, 0) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 8, 4, 16, 0) == TEST_FAILED) return TEST_FAILED;
 	if (tmp->vector[3] != NULL) return TEST_FAILED;
 	if (tmp->vector[6] != NULL) return TEST_FAILED;
 	if (tmp->vector[9] != NULL) return TEST_FAILED;
@@ -288,18 +284,19 @@ int test_rehash_resize() {
 //////////////////////////////
 	tmp = ht_create_container(hash_pol);
 
-	for (int i = 0; i < 8; i++) ht_insert(tmp, i, i * i);
-	
+	alloc_mem_cal = 0;
+	for (int i = 0; i < 8; i++) { ht_insert(tmp, i, i * i); printf("%d ", i); }
+
 	if (check_elem(tmp, 0, 0, 0, 0) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 1, 3, 9, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 2, 6, 36, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 4, 2, 4, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 5, 5, 25, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 7, 1, 1, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 8, 4, 16, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 19, 7, 49, 0) == TEST_FAILED) return TEST_FAILED;
 
 	for (int i = 0; i < 20; i++) 
-		if (i != 0 && i != 2 && i != 4
+		if (i != 0 && i != 1 && i != 2
 	 	 && i != 5 && i != 7 && i != 8
 	 	 && i != 19 && tmp->vector[i] != NULL) 
 			return TEST_FAILED;
@@ -310,6 +307,7 @@ int test_rehash_resize() {
 	tmp = ht_create_container(hash_pol);
 
 	for (int i = 0; i < 7; i++) ht_insert(tmp, i, i * i);
+	for (int i = 0; i < 7; i++) ht_erase(tmp, i);
 
 	alloc_mem_cal = 25;
 	ret = ht_insert(tmp, 7, 49);
@@ -332,7 +330,7 @@ int test_rehash_resize() {
 }
 
 int test_foreach() {
-
+	
 	hash_table* tmp = ht_create_container(hash_pol);
 	ht_foreach(tmp, print_elems, NULL);
 
