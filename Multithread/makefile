@@ -9,7 +9,7 @@ clean:
 compile:
 	${CC} integral.c -lm -lpthread -DTHREADS=${THREADS}
 run:
-	./${OUTPUT}
+	time ./${OUTPUT}
 
 %.o: %.c %.h
 	$(CC) -c $< -o $@
