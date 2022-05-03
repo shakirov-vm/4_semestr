@@ -33,9 +33,7 @@ int main() {
 	int ret = 0;
 	table_element* finded = NULL;
 
-
-
-	fr(int i = 0; i < 3000; i++) {
+	for(int i = 0; i < 3000; i++) {
 		ret = ht_insert(first, i, i * i);
 		//if (ret != 0) printf("insert error - %d\n", i); 
 	}

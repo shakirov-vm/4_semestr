@@ -181,6 +181,16 @@ int test_insert_erase() {
 
 	ht_delete_container(tmp);
 
+	tmp = ht_create_container(hash_pol);
+
+	for (int i = 0; i < 5; i++) ht_insert(tmp, i, i * i);
+	for (int i = 0; i < 5; i++) ht_erase(tmp, i);
+
+	for (int i = 0; i < 10; i++)
+		if (tmp->vector[i] != NULL) return TEST_FAILED_ERASE;
+
+	ht_delete_container(tmp);
+
 	return TEST_SUCCESS;
 }
 
@@ -235,6 +245,22 @@ int test_find() {
 
 	ht_delete_container(tmp_1);
 
+	tmp = ht_create_container(hash_pol);
+
+	ht_insert(tmp, 0, 0);
+	ht_insert(tmp, 3, 9);
+	ht_insert(tmp, 6, 36);
+	ht_insert(tmp, 10, 100);
+
+	ht_erase(tmp, 6);
+	ht_erase(tmp, 3);
+	ht_erase(tmp, 0);
+
+	ret = ht_find(tmp, 0);
+	if (ret != NULL) return TEST_FAILED;
+
+	ht_delete_container(tmp);
+
 	return TEST_SUCCESS;
 }
 
@@ -244,19 +270,23 @@ int test_rehash_resize() {
 
 	hash_table* tmp = ht_create_container(hash_pol);
 
-	for (int i = 0; i < 5; i++) ht_insert(tmp, i, i * i);
-	for (int i = 0; i < 5; i++) ht_erase(tmp, i);
-
-	ht_insert(tmp, 5, 25);
+	ht_insert(tmp, 0, 0);
+	ht_insert(tmp, 3, 9);
 	ht_insert(tmp, 6, 36);
-	ht_insert(tmp, 7, 49);
+	ht_insert(tmp, 10, 100);
 
-	if (check_elem(tmp, 2, 6, 36, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 5, 5, 25, 0) == TEST_FAILED) return TEST_FAILED;
+	ht_erase(tmp, 6);
+	ht_erase(tmp, 3);
+	ht_erase(tmp, 0);
+
+	alloc_mem_cal = 0;
+	ret = ht_insert(tmp, 7, 49);
+
+	if (check_elem(tmp, 0, 10, 100, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 9, 7, 49, 0) == TEST_FAILED) return TEST_FAILED;
 
-	for (int i = 0; i < 10; i++) 
-		if (i != 2 && i != 5 && i != 9 && tmp->vector[i] != NULL) 
+	for (int i = 1; i < 9; i++) 
+		if (tmp->vector[i] != NULL) 
 			return TEST_FAILED;
 
 	ht_delete_container(tmp);
@@ -285,19 +315,19 @@ int test_rehash_resize() {
 	tmp = ht_create_container(hash_pol);
 
 	alloc_mem_cal = 0;
-	for (int i = 0; i < 8; i++) { ht_insert(tmp, i, i * i); printf("%d ", i); }
+	for (int i = 0; i < 8; i++) ht_insert(tmp, i, i * i);
 
 	if (check_elem(tmp, 0, 0, 0, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 1, 3, 9, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 2, 6, 36, 0) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 4, 2, 4, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 5, 5, 25, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 7, 1, 1, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 8, 4, 16, 0) == TEST_FAILED) return TEST_FAILED;
 	if (check_elem(tmp, 19, 7, 49, 0) == TEST_FAILED) return TEST_FAILED;
 
 	for (int i = 0; i < 20; i++) 
 		if (i != 0 && i != 1 && i != 2
-	 	 && i != 5 && i != 7 && i != 8
+	 	 && i != 4 && i != 5 && i != 8
 	 	 && i != 19 && tmp->vector[i] != NULL) 
 			return TEST_FAILED;
 
@@ -306,23 +336,27 @@ int test_rehash_resize() {
 
 	tmp = ht_create_container(hash_pol);
 
-	for (int i = 0; i < 7; i++) ht_insert(tmp, i, i * i);
-	for (int i = 0; i < 7; i++) ht_erase(tmp, i);
+	ht_insert(tmp, 0, 0);
+	ht_insert(tmp, 3, 9);
+	ht_insert(tmp, 6, 36);
+	ht_insert(tmp, 10, 100);
+
+	ht_erase(tmp, 6);
+	ht_erase(tmp, 3);
+	ht_erase(tmp, 0);
 
 	alloc_mem_cal = 25;
 	ret = ht_insert(tmp, 7, 49);
 	if (ret != 2) return TEST_FAILED;
 
-	if (check_elem(tmp, 0, 0, 0, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 1, 3, 9, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 2, 6, 36, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 4, 2, 4, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 5, 5, 25, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 7, 1, 1, 0) == TEST_FAILED) return TEST_FAILED;
-	if (check_elem(tmp, 8, 4, 16, 0) == TEST_FAILED) return TEST_FAILED;
-	if (tmp->vector[3] != NULL) return TEST_FAILED;
-	if (tmp->vector[6] != NULL) return TEST_FAILED;
-	if (tmp->vector[9] != NULL) return TEST_FAILED;
+	if (check_elem(tmp, 0, 0, 0, 1) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 1, 3, 9, 1) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 2, 6, 36, 1) == TEST_FAILED) return TEST_FAILED;
+	if (check_elem(tmp, 3, 10, 100, 0) == TEST_FAILED) return TEST_FAILED;
+
+	for (int i = 4; i < 10; i++) 
+		if (tmp->vector[i] != NULL) 
+			return TEST_FAILED;
 
 	ht_delete_container(tmp);
 

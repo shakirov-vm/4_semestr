@@ -214,10 +214,23 @@ int ht_erase(hash_table* table, KEY key_) {
 				return 1;
 			
 			else {
-
+					
 				table->vector[iter]->deleted = 1;
 				++table->size_deleted;
 				--table->size;
+
+				if (table->vector[iter + 1] == NULL) {
+
+					while (table->vector[iter] != NULL && table->vector[iter]->deleted != 0) {
+						
+						free(table->vector[iter]);
+						table->vector[iter] = NULL;
+		
+						iter = (iter - 1) % table->capacity;
+						--table->size_deleted;
+					}
+				}
+
 				return 0;
 			}
 		}
@@ -287,6 +300,7 @@ int ht_resize(hash_table* table) {
 void ht_foreach(hash_table* table, void(*callback)(table_element*, void*), void* data) {
 
 	for(size_t i = 0; i < table->capacity; i++) {
+		
 		//if (table->vector[i] != NULL) printf("[%d;%d;%d - %ld] ", table->vector[i]->key, table->vector[i]->value, table->vector[i]->deleted, i);
 		//else printf("[NULL - %ld] ", i);
 		
