@@ -2,12 +2,11 @@
 CC ?= gcc
 OUTPUT ?= a.out
 CFLAGS := ${CFLAGS}
-THREADS ?= 1
 
 clean:
 	rm -f a.out
 compile:
-	${CC} integral.c -lm -lpthread -DTHREADS=${THREADS}
+	${CC} integral.c -lm -lpthread
 run:
 	time ./${OUTPUT}
 
