@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/sysinfo.h>
+#include <string.h>
 
 #define e 2.71828182846
 #define PAGE_SIZE 4096
@@ -65,6 +66,13 @@ int main(int argc, char** argv) {
 	}
 
 	int threads = atoi(argv[1]);
+
+	if (threads < 1) {
+		printf("minimal threads num - 1\n");
+	}
+	if (threads > num_proc) {
+		threads = num_proc;
+	}
 
 	pthread_t thread_ids[threads];
 	struct integral_param params[threads];

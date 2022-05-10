@@ -1,16 +1,15 @@
 
 CC ?= gcc
-OUTPUT ?= multithread
+OUTPUT ?= a.out
 CFLAGS := ${CFLAGS}
-THREADS ?= 1
 
 clean:
 	rm -f a.out
 	rm -f ${OUTPUT}
 compile:
-	${CC} integral.c -lm -lpthread -o ${OUTPUT}
+	${CC} server.c
 run:
-	time ./${OUTPUT} ${THREADS}
+	time ./${OUTPUT}
 
 %.o: %.c %.h
 	$(CC) -c $< -o $@
