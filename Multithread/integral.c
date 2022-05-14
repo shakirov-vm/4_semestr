@@ -14,7 +14,13 @@
 
 int num_proc;
 
+int max_int(int first, int second) {
+	if (first > second) return first;
+	else return second;
+}
+
 struct integral_param {
+
 
 	pthread_t thread_id;
 	double start;
@@ -30,21 +36,13 @@ void* integral(void* data) {
 
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
+ 	
+	CPU_SET(param->num, &cpuset);
 
-	if (param->num < num_proc) {
-
-		if (param->num < num_proc / 2) 	
-			CPU_SET(param->num * 2, &cpuset);
-
-		else 
-			CPU_SET((param->num - num_proc / 2) * 2 + 1, &cpuset);
-
-		int err = pthread_setaffinity_np(param->thread_id, sizeof(cpuset), &cpuset);
-		if (err != 0) {
-			printf("Err is %d in %d\n", err, param->num);
-		    perror("CPU_ALLOC");
-		    //exit(EXIT_FAILURE);
-		}
+	int err = pthread_setaffinity_np(param->thread_id, sizeof(cpuset), &cpuset);
+	if (err != 0) {
+		printf("Err is %d in %d\n", err, param->num);
+	    perror("CPU_ALLOC");
 	}
 
 	param->sum_local[0] = 0;
@@ -74,12 +72,12 @@ int main(int argc, char** argv) {
 		threads = num_proc;
 	}
 
-	pthread_t thread_ids[threads];
-	struct integral_param params[threads];
+	pthread_t thread_ids[num_proc];
+	struct integral_param params[num_proc];
 
 	double global_start = -10;
 	double global_fin = 10;
-	double global_delta = 0.00000005;
+	double global_delta = 0.00000025;
 
 	double interval = (global_fin - global_start) / threads;
 
@@ -92,17 +90,23 @@ int main(int argc, char** argv) {
 		params[i].delta = global_delta;
 		params[i].num = i;
 	}
+	for (int i = threads; i < num_proc; i++) {
+		params[i].start = global_start;
+		params[i].fin = global_start + interval;
+		params[i].delta = global_delta;
+		params[i].num = i;
+	}
 
 	double sum_global = 0;
 
-	for (int i = 0; i < threads; i++) {
+	for (int i = 0; i < num_proc; i++) {
 
 		err = pthread_create(&(params[i].thread_id), NULL, integral, &params[i]);
 	}
-	for (int i = 0; i < threads; i++) {
+	for (int i = 0; i < num_proc; i++) {
 
 		err = pthread_join(params[i].thread_id, NULL);
-		sum_global += params[i].sum_local[0];
+		if (i < threads) sum_global += params[i].sum_local[0];
 	}
 
 	printf("integral - %lf\n", sum_global);
