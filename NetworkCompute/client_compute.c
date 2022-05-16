@@ -9,6 +9,8 @@
 #include <sys/sysinfo.h>
 #include <string.h>
 
+#include "structures.h"
+
 #define e 2.71828182846
 #define PAGE_SIZE 4096
 
@@ -53,16 +55,11 @@ void* integral(void* data) {
 	}
 }
 
-int main(int argc, char** argv) {
+double compute_integral(int num_threads, struct boards_info general_boards) {
 
 	num_proc = get_nprocs_conf(); // get_nprocs();
 
-	if (argc < 2) {
-	   fprintf(stderr, "Usage: %s <num-cpus>\n", argv[0]);
-	   exit(EXIT_FAILURE);
-	}
-
-	int threads = atoi(argv[1]);
+	int threads = num_threads;
 
 	if (threads < 1) {
 		printf("minimal threads num - 1\n");
@@ -74,9 +71,9 @@ int main(int argc, char** argv) {
 	pthread_t thread_ids[num_proc];
 	struct integral_param params[num_proc];
 
-	double global_start = -10;
-	double global_fin = 10;
-	double global_delta = 0.00000025;
+	double global_start = general_boards.left;
+	double global_fin = general_boards.right;
+	double global_delta = general_boards.delta;
 
 	double interval = (global_fin - global_start) / threads;
 
@@ -90,6 +87,7 @@ int main(int argc, char** argv) {
 		params[i].num = i;
 	}
 	for (int i = threads; i < num_proc; i++) {
+		
 		params[i].start = global_start;
 		params[i].fin = global_start + interval;
 		params[i].delta = global_delta;
@@ -108,5 +106,5 @@ int main(int argc, char** argv) {
 		if (i < threads) sum_global += params[i].sum_local[0];
 	}
 
-	printf("integral - %lf\n", sum_global);
+	return sum_global;
 }
