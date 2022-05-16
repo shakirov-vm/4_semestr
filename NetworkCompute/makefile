@@ -1,7 +1,7 @@
 
 CC ?= gcc
 OUTPUT ?= a.out
-CFLAGS := ${CFLAGS}
+CFLAGS := ${CFLAGS} 
 
 clean:
 	rm -f a.out
@@ -9,9 +9,9 @@ clean:
 	rm -f server
 	rm -f client
 compile_server: structures.h server.c
-	${CC} server.c -o server
+	${CC} server.c -o server -std=gnu99
 compile_client: structures.h client.c client_compute.c
-	${CC} client.c client_compute.c -o client -lm -lpthread
+	${CC} client.c client_compute.c -o client -lm -lpthread -std=gnu99
 
 %.o: %.c %.h
 	$(CC) -c $< -o $@

@@ -109,21 +109,18 @@ void server_init(int num_clients) {
 
     for (; i < num_clients; i++) {
 
-        printf("before accept\n");
-
 	    sock_data[i] = accept(sock_connect, NULL, NULL);
 
 	    if (sock_data[i] < 0) {
 	        
-	        if (errno == EAGAIN) { 
+	        if (errno == EAGAIN) { // No one connect to accept
 	        
 	            printf("got all clients after accept\n");
-
 	            break;
 	        }
 	        else perror("accept client");
     	}
-        printf("after success accept\n");
+        printf("%d success accept\n", i);
 
         struct timeval compute_timeout;
         compute_timeout.tv_sec = COMPUTE_TIMEOUT_SEC;
@@ -149,8 +146,9 @@ void server_init(int num_clients) {
     struct timeval time_begin, time_end;
     gettimeofday(&time_begin, 0);
 
-    size_t global_threads = 0;
-    size_t client_threads[connected_clients]; 
+    int global_threads = 0;
+    //int client_threads[connected_clients]; 
+    int* client_threads = (int*) calloc (connected_clients, sizeof(int));
 
     for (int i = 0; i < connected_clients; ++i) {
     	
@@ -167,31 +165,42 @@ void server_init(int num_clients) {
 
             return;
         }
-
+        
         global_threads += client_threads[i];
     }
 
-    printf("global_threads: %ld\n", global_threads);
+    printf("global_threads: %d\n", global_threads);
 
 	double global_start = -10;
 	double global_fin = 10;
 	double global_delta = 0.00000005;
+	
+	printf("start - %lf, fin - %lf\n", global_start, global_fin);
+	printf("dif - %lf, global_threads - %d\n", global_fin - global_start, global_threads);
+	printf("interval - %lf\n", (global_fin - global_start) / global_threads);
 
     for (int i = 0; i < connected_clients; ++i) {
 
         struct boards_info general_boards;
+        general_boards.left = global_start;
+        general_boards.right = global_start;
 
 		double interval = (global_fin - global_start) / global_threads;
 
-       	general_boards.left = global_start + i * interval * client_threads[i];
-		general_boards.right = global_start + (i + 1) * interval * client_threads[i];
+	    for (int j = 0; j < i; j++) { 
+	     
+	       	general_boards.left += interval * client_threads[j];
+			general_boards.right += interval * client_threads[j];
+		}
+		general_boards.right += interval * client_threads[i];
 		general_boards.delta = global_delta;
 
-        err = sendto(sock_data[i], &general_boards, sizeof(general_boards), 0, (struct sockaddr *)(&clinet_addrs[i]), client_addr_len);
+        err = sendto(sock_data[i], &general_boards, sizeof(general_boards), 0, (struct sockaddr *) (&clinet_addrs[i]), client_addr_len);
 
     	if (err != sizeof(general_boards)) perror("sendto general_boards");
     }
 
+    free(client_threads);
     double sum_global = 0;
 
     for (int i = 0; i < connected_clients; i++) {
@@ -213,7 +222,7 @@ void server_init(int num_clients) {
 
             return;
         }
-        
+
         sum_global += res;
         printf("res[%d]: %lf\n", i, res);
 

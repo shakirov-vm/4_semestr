@@ -96,7 +96,7 @@ void client_init(int num_threads) {
     printf("connect\n");
 
     int threads = num_threads;
-    err = send(sock_data, &threads, sizeof(threads), MSG_NOSIGNAL);
+    err = send(sock_data, &threads, sizeof(int), MSG_NOSIGNAL);
     if (err < 0) perror("send num_threads");
 
     struct boards_info general_boards;
