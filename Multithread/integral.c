@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <errno.h>
 #include <sys/sysinfo.h>
 #include <string.h>
@@ -13,8 +14,10 @@
 #define PAGE_SIZE 4096
 
 int num_proc;
+int per_core;
 
 int max_int(int first, int second) {
+
 	if (first > second) return first;
 	else return second;
 }
@@ -29,6 +32,54 @@ struct integral_param {
 	double sum_local[PAGE_SIZE / sizeof(double)];
 };
 
+int read_number(const char* str, int *num) {
+
+		if (str == NULL) return -1;
+
+        const char* iter = str;
+        while(!isdigit(*iter)) iter++;
+        return sscanf(iter, "%d", num);
+}
+
+int get_per_core() {
+
+    per_core = 2;
+    
+    FILE* cpu_info_file = popen("lscpu -y", "r");
+    
+    if (cpu_info_file != NULL) {
+
+        char* file_buf = NULL;
+        size_t dump_size = 0;
+
+        getdelim(&file_buf, &dump_size, '\0', cpu_info_file);
+
+        if (file_buf == NULL) return per_core;
+
+        read_number(strstr(file_buf, "Thread(s) per core:"), &per_core);
+
+        free(file_buf);
+                
+    } else {
+
+        FILE* file_ht_active = fopen("/sys/devices/system/cpu/smt/active", "r");
+        if (file_ht_active == NULL) return per_core;
+
+        int active = 0;
+        int err = fscanf(file_ht_active, "%d", &active);
+		if (err < 1) return per_core;
+
+        if (active > 0) per_core = 2; // HT active
+        else per_core = 1;
+
+        fclose(file_ht_active);
+    }
+    
+    fclose(cpu_info_file);
+
+    return per_core;
+}
+
 void* integral(void* data) {
 
 	struct integral_param* param = data;
@@ -36,7 +87,10 @@ void* integral(void* data) {
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
  	
-	CPU_SET(param->num, &cpuset);
+ 	int num_real_cpu = num_proc / per_core;
+	int num_of_cpu = ((param->num % num_real_cpu) * per_core + param->num / num_real_cpu) % num_proc;
+
+	CPU_SET(num_of_cpu, &cpuset);
 
 	int err = pthread_setaffinity_np(param->thread_id, sizeof(cpuset), &cpuset);
 	if (err != 0) {
@@ -56,6 +110,7 @@ void* integral(void* data) {
 int main(int argc, char** argv) {
 
 	num_proc = get_nprocs_conf(); // get_nprocs();
+	per_core = get_per_core();
 
 	if (argc < 2) {
 	   fprintf(stderr, "Usage: %s <num-cpus>\n", argv[0]);
@@ -76,7 +131,7 @@ int main(int argc, char** argv) {
 
 	double global_start = -10;
 	double global_fin = 10;
-	double global_delta = 0.00000025;
+	double global_delta = 0.0000001;
 
 	double interval = (global_fin - global_start) / threads;
 
