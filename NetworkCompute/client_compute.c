@@ -57,7 +57,8 @@ int get_per_core() {
 
         if (file_buf == NULL) return per_core;
 
-        read_number(strstr(file_buf, "Thread(s) per core:"), &per_core);
+        char* place = strstr(file_buf, "Thread(s) per core:");
+        read_number(place, &per_core);
 
         free(file_buf);
                 
