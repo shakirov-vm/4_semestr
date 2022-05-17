@@ -4,6 +4,10 @@ OUTPUT ?= multithread
 CFLAGS := ${CFLAGS}
 THREADS ?= 1
 
+.PHONY: clean all
+
+all: clean compile
+
 compile:
 	${CC} integral.c -lm -lpthread -o ${OUTPUT}
 clean:
@@ -11,8 +15,6 @@ clean:
 	rm -f ${OUTPUT}
 run:
 	time ./${OUTPUT} ${THREADS}
-
-.PHONY: clean compile
 
 %.o: %.c %.h
 	$(CC) -c $< -o $@

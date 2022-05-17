@@ -100,7 +100,7 @@ void server_init(int num_clients) {
 
     printf("broadcast finish\n");
 
-    int sock_data[num_clients];
+    int* sock_data = (int*) calloc (num_clients, sizeof(int));
 
     struct sockaddr_in clinet_addrs[num_clients];
     socklen_t client_addr_len = sizeof(clinet_addrs[0]);
@@ -228,6 +228,8 @@ void server_init(int num_clients) {
 
 	    close(sock_data[i]);
     }
+
+    free(sock_data);
 
     gettimeofday(&time_end, 0);
     int seconds = time_end.tv_sec - time_begin.tv_sec;
