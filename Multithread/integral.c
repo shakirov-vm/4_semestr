@@ -21,6 +21,11 @@ int max_int(int first, int second) {
 	if (first > second) return first;
 	else return second;
 }
+int min_int(int first, int second) {
+
+	if (first < second) return first;
+	else return second;
+}
 
 struct integral_param {
 
@@ -126,21 +131,31 @@ int main(int argc, char** argv) {
 	}
 
 	int max_thread = max_int(threads, num_proc);
+	int real_thread = min_int(threads, num_proc);
 
 	//pthread_t thread_ids[max_thread];
 	//struct integral_param params[max_thread];
 	pthread_t* thread_ids = (pthread_t*) calloc (max_thread, sizeof(pthread_t));
+	if (thread_ids == NULL) {
+		perror("thread_ids");
+		return 2;
+	}
 	struct integral_param* params = (struct integral_param*) calloc (max_thread, sizeof(struct integral_param));
+	if (params == NULL) {
+		perror("params");
+		return 2;
+	}
 
 	double global_start = -10;
 	double global_fin = 10;
 	double global_delta = 0.0000001;
 
-	double interval = (global_fin - global_start) / threads;
+	double interval = (global_fin - global_start) / real_thread;
+	printf("intervaaal - %lf\n", interval);
 
 	int err = 0;
 
-	for (int i = 0; i < threads; i++) {
+	for (int i = 0; i < real_thread; i++) {
 
 		params[i].start = global_start + i * interval;
 		params[i].fin = global_start + (i + 1) * interval;
