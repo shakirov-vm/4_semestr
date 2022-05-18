@@ -9,7 +9,7 @@ THREADS ?= 1
 all: clean compile
 
 compile:
-	${CC} integral.c -lm -lpthread -o ${OUTPUT}
+	${CC} integral.c -std=gnu99 -lm -lpthread -o ${OUTPUT}
 clean:
 	rm -f a.out
 	rm -f ${OUTPUT}

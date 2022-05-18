@@ -28,8 +28,8 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void client_init(int num_threads) {
-
+void broadcast_client(int* serv_port, struct sockaddr_in* peer_addr, socklen_t* peer_addr_len) {
+    
     int err = 0;
 
     int sock_bc = socket(AF_INET, SOCK_DGRAM, 0);
@@ -50,22 +50,20 @@ void client_init(int num_threads) {
     err = bind(sock_bc, (struct sockaddr*) &local_addr, sizeof(local_addr));
     if (err < 0) perror("bind sock_bc");
 
-    int serv_port = 0;
-
     printf("wait server\n");
 
-    struct sockaddr_in peer_addr;
-    memset(&peer_addr, '0', sizeof(peer_addr));
-
-    socklen_t peer_addr_len = sizeof(peer_addr);
-
-    err = recvfrom(sock_bc, &serv_port, sizeof(int), 0, (struct sockaddr*) &peer_addr, &peer_addr_len);
+    err = recvfrom(sock_bc, serv_port, sizeof(int), 0, (struct sockaddr*) peer_addr, peer_addr_len);
     if (err != sizeof(int)) perror("recvfrom serv_port");
 
-    if (serv_port != SERVERPORT) return;
+    if (*serv_port != SERVERPORT) return;
 
     close(sock_bc);
+} 
 
+int tcp_client(int* serv_port, struct sockaddr_in* peer_addr, int num_threads) {
+
+    int err = 0;
+    
     int sock_data = socket(AF_INET, SOCK_STREAM, 0);
 
     int keep_cnt = KEEPCNT;
@@ -83,8 +81,8 @@ void client_init(int num_threads) {
     memset(&serv_addr, '0', sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(serv_port);
-    serv_addr.sin_addr = peer_addr.sin_addr;
+    serv_addr.sin_port = htons(*serv_port);
+    serv_addr.sin_addr = peer_addr->sin_addr;
 
     socklen_t serv_addr_len = sizeof(serv_addr);
 
@@ -94,6 +92,13 @@ void client_init(int num_threads) {
     if (err < 0) perror("sock_data connect");
     
     printf("connect\n");
+
+    return sock_data;
+}
+
+void client_compute(int sock_data, int num_threads) {
+
+    int err = 0;
 
     int threads = num_threads;
     err = send(sock_data, &threads, sizeof(int), MSG_NOSIGNAL);
@@ -117,4 +122,17 @@ void client_init(int num_threads) {
 
     printf("client end\n");
     return;
+}
+
+void client_init(int num_threads) {
+
+    int serv_port = 0;
+    
+    struct sockaddr_in peer_addr;
+    memset(&peer_addr, '0', sizeof(peer_addr));
+    socklen_t peer_addr_len = sizeof(peer_addr);
+
+    broadcast_client(&serv_port, &peer_addr, &peer_addr_len);
+    int sock_data = tcp_client(&serv_port, &peer_addr, num_threads);
+    client_compute(sock_data, num_threads);
 }

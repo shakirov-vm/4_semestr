@@ -28,12 +28,9 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void server_init(int num_clients) {
+void tcp_server(int sock_connect) {
 
-	int err = 0;
-// Non block??
-    int sock_connect = socket(AF_INET, SOCK_STREAM, 0); 
-    if (sock_connect < 0) perror("socket sock_connect");
+    int err = 0;
 
     struct timeval timeout_accept;
     timeout_accept.tv_sec = ACCEPT_TIMEOUT_SEC;
@@ -61,23 +58,28 @@ void server_init(int num_clients) {
     struct sockaddr_in serv_addr;
     memset(&serv_addr, '0', sizeof(serv_addr));
 
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_addr.sin_port = htons(SERVERPORT);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(SERVERPORT);
     
     err = bind(sock_connect, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
     if (err < 0) perror("bind sock_connect");
 
     err = listen(sock_connect, LISTEN_BACKLOG);
     if (err < 0) perror("listen");
-    
-    // broadcast
+}
+
+void broadcast_server() {
+
+    int err = 0;
 
     printf("broadcast start\n");
 
     int sock_bc = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock_bc < 0) perror("socket sock_bc");
     
+    int k = 1; // > 0
+
     err = setsockopt(sock_bc, SOL_SOCKET, SO_BROADCAST, &k, sizeof(int));
     if (err != 0) perror("setsockopt sock_bc broadcast");
     err = setsockopt(sock_bc, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(int));
@@ -99,27 +101,26 @@ void server_init(int num_clients) {
     close(sock_bc);
 
     printf("broadcast finish\n");
+}
 
-    int* sock_data = (int*) calloc (num_clients, sizeof(int));
+int connect_to_clients(int sock_connect, int* sock_data, struct sockaddr_in* clinet_addrs, int num_clients) {
 
-    struct sockaddr_in clinet_addrs[num_clients];
-    socklen_t client_addr_len = sizeof(clinet_addrs[0]);
-
+    int err = 0;
     int i = 0;
 
     for (; i < num_clients; i++) {
 
-	    sock_data[i] = accept(sock_connect, NULL, NULL);
+        sock_data[i] = accept(sock_connect, NULL, NULL);
 
-	    if (sock_data[i] < 0) {
-	        
-	        if (errno == EAGAIN) { // No one connect to accept
-	        
-	            printf("got all clients after accept\n");
-	            break;
-	        }
-	        else perror("accept client");
-    	}
+        if (sock_data[i] < 0) {
+            
+            if (errno == EAGAIN) { // No one connect to accept
+            
+                printf("got all clients after accept\n");
+                break;
+            }
+            else perror("accept client");
+        }
         printf("%d success accept\n", i);
 
         struct timeval compute_timeout;
@@ -127,7 +128,7 @@ void server_init(int num_clients) {
         compute_timeout.tv_usec = COMPUTE_TIMEOUT_USEC;
 
         err = setsockopt(sock_data[i], SOL_SOCKET, SO_RCVTIMEO, &compute_timeout, sizeof(compute_timeout));
-       	if (err != 0) perror("setsockopt sock_data SO_RCVTIMEO");
+        if (err != 0) perror("setsockopt sock_data SO_RCVTIMEO");
 
         clinet_addrs[i].sin_family = AF_INET;
         clinet_addrs[i].sin_port = htons(CLIENTPORT);
@@ -138,20 +139,26 @@ void server_init(int num_clients) {
 
         printf("there no clients\n");
         close(sock_connect);
-        return;
+        return 0;
     }
 
     printf("there %d connected_clients\n", i);
+
+    return connected_clients;
+}
+
+void server_compute(int sock_connect, int* sock_data, struct sockaddr_in* clinet_addrs, socklen_t client_addr_len, int connected_clients) {
+
+    int err = 0;
 
     struct timeval time_begin, time_end;
     gettimeofday(&time_begin, 0);
 
     int global_threads = 0;
-    //int client_threads[connected_clients]; 
     int* client_threads = (int*) calloc (connected_clients, sizeof(int));
 
     for (int i = 0; i < connected_clients; ++i) {
-    	
+        
         int ret = recv(sock_data[i], &(client_threads[i]), sizeof(int), 0);
         if (ret < 0) perror("recv client_thread");
 
@@ -171,13 +178,9 @@ void server_init(int num_clients) {
 
     printf("global_threads: %d\n", global_threads);
 
-	double global_start = -10;
-	double global_fin = 10;
-	double global_delta = 0.00000005;
-	
-	printf("start - %lf, fin - %lf\n", global_start, global_fin);
-	printf("dif - %lf, global_threads - %d\n", global_fin - global_start, global_threads);
-	printf("interval - %lf\n", (global_fin - global_start) / global_threads);
+    double global_start = -10;
+    double global_fin = 10;
+    double global_delta = 0.00000005;
 
     for (int i = 0; i < connected_clients; ++i) {
 
@@ -185,19 +188,19 @@ void server_init(int num_clients) {
         general_boards.left = global_start;
         general_boards.right = global_start;
 
-		double interval = (global_fin - global_start) / global_threads;
+        double interval = (global_fin - global_start) / global_threads;
 
-	    for (int j = 0; j < i; j++) { 
-	     
-	       	general_boards.left += interval * client_threads[j];
-			general_boards.right += interval * client_threads[j];
-		}
-		general_boards.right += interval * client_threads[i];
-		general_boards.delta = global_delta;
+        for (int j = 0; j < i; j++) { 
+         
+            general_boards.left += interval * client_threads[j];
+            general_boards.right += interval * client_threads[j];
+        }
+        general_boards.right += interval * client_threads[i];
+        general_boards.delta = global_delta;
 
         err = sendto(sock_data[i], &general_boards, sizeof(general_boards), 0, (struct sockaddr *) (&clinet_addrs[i]), client_addr_len);
 
-    	if (err != sizeof(general_boards)) perror("sendto general_boards");
+        if (err != sizeof(general_boards)) perror("sendto general_boards");
     }
 
     free(client_threads);
@@ -226,10 +229,8 @@ void server_init(int num_clients) {
         sum_global += res;
         printf("res[%d]: %lf\n", i, res);
 
-	    close(sock_data[i]);
+        close(sock_data[i]);
     }
-
-    free(sock_data);
 
     gettimeofday(&time_end, 0);
     int seconds = time_end.tv_sec - time_begin.tv_sec;
@@ -237,6 +238,27 @@ void server_init(int num_clients) {
     double sum_time = seconds + (double) microseconds / 1000 / 1000;
 
     printf("integral - %lf\nreal time of compute: %.3f seconds\n", sum_global, sum_time);
+}
 
+void server_init(int num_clients) {
+
+	int err = 0;
+// Non block??
+    int sock_connect = socket(AF_INET, SOCK_STREAM, 0); 
+    if (sock_connect < 0) perror("socket sock_connect");
+
+    tcp_server(sock_connect);
+    broadcast_server();
+
+    int* sock_data = (int*) calloc (num_clients, sizeof(int));
+
+    struct sockaddr_in* clinet_addrs = (struct sockaddr_in*) calloc (num_clients, sizeof(struct sockaddr_in));
+    socklen_t client_addr_len = sizeof(clinet_addrs[0]);
+
+    int connected_clients = connect_to_clients(sock_connect, sock_data, clinet_addrs, num_clients);
+
+    server_compute(sock_connect, sock_data, clinet_addrs, client_addr_len, connected_clients);
+
+    free(sock_data);
     close(sock_connect);
 }
