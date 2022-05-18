@@ -70,10 +70,6 @@ void server_init(int num_clients) {
 
     err = listen(sock_connect, LISTEN_BACKLOG);
     if (err < 0) perror("listen");
-    
-    // broadcast
-
-    printf("broadcast start\n");
 
     int sock_bc = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock_bc < 0) perror("socket sock_bc");
@@ -98,11 +94,10 @@ void server_init(int num_clients) {
     if (err < 0) perror("sendto broadcast");
     close(sock_bc);
 
-    printf("broadcast finish\n");
-
     int* sock_data = (int*) calloc (num_clients, sizeof(int));
 
     struct sockaddr_in clinet_addrs[num_clients];
+    //struct sockaddr_in* clinet_addrs = (struct sockaddr_in*) calloc (num_clients, sizeof(struct sockaddr_in));
     socklen_t client_addr_len = sizeof(clinet_addrs[0]);
 
     int i = 0;
@@ -120,7 +115,6 @@ void server_init(int num_clients) {
 	        }
 	        else perror("accept client");
     	}
-        printf("%d success accept\n", i);
 
         struct timeval compute_timeout;
         compute_timeout.tv_sec = COMPUTE_TIMEOUT_SEC;
@@ -147,7 +141,7 @@ void server_init(int num_clients) {
     gettimeofday(&time_begin, 0);
 
     int global_threads = 0;
-    //int client_threads[connected_clients]; 
+
     int* client_threads = (int*) calloc (connected_clients, sizeof(int));
 
     for (int i = 0; i < connected_clients; ++i) {

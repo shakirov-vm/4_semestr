@@ -122,13 +122,15 @@ int main(int argc, char** argv) {
 
 	if (threads < 1) {
 		printf("minimal threads num - 1\n");
-	}
-	if (threads > num_proc) {
-		threads = num_proc;
+		return 1;
 	}
 
-	pthread_t thread_ids[num_proc];
-	struct integral_param params[num_proc];
+	int max_thread = max_int(threads, num_proc);
+
+	//pthread_t thread_ids[max_thread];
+	//struct integral_param params[max_thread];
+	pthread_t* thread_ids = (pthread_t*) calloc (max_thread, sizeof(pthread_t));
+	struct integral_param* params = (struct integral_param*) calloc (max_thread, sizeof(struct integral_param));
 
 	double global_start = -10;
 	double global_fin = 10;
@@ -145,7 +147,8 @@ int main(int argc, char** argv) {
 		params[i].delta = global_delta;
 		params[i].num = i;
 	}
-	for (int i = threads; i < num_proc; i++) {
+	for (int i = threads; i < max_thread; i++) {
+
 		params[i].start = global_start;
 		params[i].fin = global_start + interval;
 		params[i].delta = global_delta;
@@ -154,15 +157,18 @@ int main(int argc, char** argv) {
 
 	double sum_global = 0;
 
-	for (int i = 0; i < num_proc; i++) {
+	for (int i = 0; i < max_thread; i++) {
 
 		err = pthread_create(&(params[i].thread_id), NULL, integral, &params[i]);
 	}
-	for (int i = 0; i < num_proc; i++) {
+	for (int i = 0; i < max_thread; i++) {
 
 		err = pthread_join(params[i].thread_id, NULL);
 		if (i < threads) sum_global += params[i].sum_local[0];
 	}
 
 	printf("integral - %lf\n", sum_global);
+
+	free(thread_ids);
+	free(params);
 }
