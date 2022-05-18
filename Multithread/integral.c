@@ -125,6 +125,8 @@ int main(int argc, char** argv) {
 
 	int threads = atoi(argv[1]);
 
+	printf("num_threads - %d\n", threads);
+
 	if (threads < 1) {
 		printf("minimal threads num - 1\n");
 		return 1;
@@ -137,21 +139,23 @@ int main(int argc, char** argv) {
 	//struct integral_param params[max_thread];
 	pthread_t* thread_ids = (pthread_t*) calloc (max_thread, sizeof(pthread_t));
 	if (thread_ids == NULL) {
+		printf("Can't alloc that much memory\n");
 		perror("thread_ids");
 		return 2;
 	}
 	struct integral_param* params = (struct integral_param*) calloc (max_thread, sizeof(struct integral_param));
 	if (params == NULL) {
+		printf("Can't alloc that much memory\n");
 		perror("params");
 		return 2;
 	}
+	printf("memory alloc\n");
 
 	double global_start = -10;
 	double global_fin = 10;
 	double global_delta = 0.0000001;
 
 	double interval = (global_fin - global_start) / real_thread;
-	printf("intervaaal - %lf\n", interval);
 
 	int err = 0;
 
