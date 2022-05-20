@@ -28,6 +28,36 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+void broadcast_server() {
+
+    int err = 0;
+
+    int sock_bc = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock_bc < 0) perror("socket sock_bc");
+    
+    int k = 1;
+
+    err = setsockopt(sock_bc, SOL_SOCKET, SO_BROADCAST, &k, sizeof(int));
+    if (err != 0) perror("setsockopt sock_bc broadcast");
+    err = setsockopt(sock_bc, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(int));
+    if (err != 0) perror("setsockopt sock_bc reuseaddres");
+   
+    struct sockaddr_in bc_addr;
+    memset(&bc_addr, '0', sizeof(bc_addr));
+
+    bc_addr.sin_family = AF_INET;
+    bc_addr.sin_port = htons(CLIENTPORT);
+    bc_addr.sin_addr.s_addr = INADDR_BROADCAST;
+
+    err = bind(sock_bc, (struct sockaddr*) &bc_addr, sizeof(bc_addr));
+    if (err < 0) perror("bind sock_bc");
+    
+    int serv_port = SERVERPORT;
+    err = sendto(sock_bc, &serv_port, sizeof(int), 0, (struct sockaddr*) &bc_addr, sizeof(bc_addr));        
+    if (err < 0) perror("sendto broadcast");
+    close(sock_bc);
+}
+
 void server_init(int num_clients) {
 
 	int err = 0;
@@ -71,28 +101,7 @@ void server_init(int num_clients) {
     err = listen(sock_connect, LISTEN_BACKLOG);
     if (err < 0) perror("listen");
 
-    int sock_bc = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock_bc < 0) perror("socket sock_bc");
-    
-    err = setsockopt(sock_bc, SOL_SOCKET, SO_BROADCAST, &k, sizeof(int));
-    if (err != 0) perror("setsockopt sock_bc broadcast");
-    err = setsockopt(sock_bc, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(int));
-    if (err != 0) perror("setsockopt sock_bc reuseaddres");
-   
-    struct sockaddr_in bc_addr;
-    memset(&bc_addr, '0', sizeof(bc_addr));
-
-    bc_addr.sin_family = AF_INET;
-    bc_addr.sin_port = htons(CLIENTPORT);
-    bc_addr.sin_addr.s_addr = INADDR_BROADCAST;
-
-    err = bind(sock_bc, (struct sockaddr*) &bc_addr, sizeof(bc_addr));
-    if (err < 0) perror("bind sock_bc");
-    
-    int serv_port = SERVERPORT;
-    err = sendto(sock_bc, &serv_port, sizeof(int), 0, (struct sockaddr*) &bc_addr, sizeof(bc_addr));        
-    if (err < 0) perror("sendto broadcast");
-    close(sock_bc);
+    broadcast_server();
 
     int* sock_data = (int*) calloc (num_clients, sizeof(int));
 
