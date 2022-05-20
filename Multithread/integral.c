@@ -175,14 +175,29 @@ int main(int argc, char** argv) {
 	}
 
 	double sum_global = 0;
+	int created = 0;
 
 	for (int i = 0; i < max_thread; i++) {
 
 		err = pthread_create(&(params[i].thread_id), NULL, integral, &params[i]);
+		if (err != 0) {
+			
+			printf("%d thread can't create\n", i);
+			perror("pthread_create");
+			break;
+		}
+		created++;
 	}
-	for (int i = 0; i < max_thread; i++) {
+
+	printf("max_thread - %d, created - %d\n", max_thread, created);
+	//if (max_thread != created) printf("They don't equal\n");
+
+	for (int i = 0; i < created/*max_thread*/; i++) {
 
 		err = pthread_join(params[i].thread_id, NULL);
+		if (err != 0) {
+			perror("pthread_join");
+		}
 		if (i < threads) sum_global += params[i].sum_local[0];
 	}
 

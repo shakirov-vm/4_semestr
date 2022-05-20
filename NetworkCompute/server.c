@@ -167,7 +167,7 @@ void server_init(int num_clients) {
 
 	double global_start = -10;
 	double global_fin = 10;
-	double global_delta = 0.00000005;
+	double global_delta = 0.0000001;
 
     for (int i = 0; i < connected_clients; ++i) {
 
