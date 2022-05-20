@@ -16,7 +16,7 @@ struct boards_info {
 #define LISTEN_BACKLOG 100
 
 #define ACCEPT_TIMEOUT_SEC  0       
-#define ACCEPT_TIMEOUT_USEC 100000  
+#define ACCEPT_TIMEOUT_USEC 1000  
 
 #define COMPUTE_TIMEOUT_SEC  10000   
 #define COMPUTE_TIMEOUT_USEC 0         

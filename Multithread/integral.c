@@ -166,6 +166,7 @@ int main(int argc, char** argv) {
 		params[i].delta = global_delta;
 		params[i].num = i;
 	}
+
 	for (int i = threads; i < max_thread; i++) {
 
 		params[i].start = global_start;
@@ -180,17 +181,10 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < max_thread; i++) {
 
 		err = pthread_create(&(params[i].thread_id), NULL, integral, &params[i]);
-		if (err != 0) {
-			
-			printf("%d thread can't create\n", i);
-			perror("pthread_create");
-			break;
-		}
-		created++;
+		if (err == 0) created++;
 	}
 
-	printf("max_thread - %d, created - %d\n", max_thread, created);
-	//if (max_thread != created) printf("They don't equal\n");
+	printf("Threads created");
 
 	for (int i = 0; i < created/*max_thread*/; i++) {
 
@@ -198,7 +192,8 @@ int main(int argc, char** argv) {
 		if (err != 0) {
 			perror("pthread_join");
 		}
-		if (i < threads) sum_global += params[i].sum_local[0];
+
+		if (i < real_thread) sum_global += params[i].sum_local[0];
 	}
 
 	printf("integral - %lf\n", sum_global);
